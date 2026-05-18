@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #080f1a;
+  --card-bg: #1e2d3d;
+  --accent-blue: #3b82f6;
+  --accent-red: #ef4444;
+}
+
+body {
+  background-color: var(--background);
+  color: #e2e8f0;
+  font-family: 'Inter', sans-serif;
+}
+
+.font-data {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+}
+
+.high-divergence {
+  animation: pulse-border 2s ease-in-out infinite;
+}
