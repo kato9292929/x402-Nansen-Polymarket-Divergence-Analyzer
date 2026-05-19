@@ -3,25 +3,30 @@
 @tailwind utilities;
 
 :root {
-  --background: #080f1a;
-  --card-bg: #1e2d3d;
-  --accent-blue: #3b82f6;
-  --accent-red: #ef4444;
+  --gold: #c8a96e;
+  --gold-light: #e8c98e;
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #111111;
+  --text-primary: #f5f0e8;
+  --text-secondary: #a09080;
+  --text-muted: #6b5f50;
+  --border: #2a2a2a;
 }
 
 body {
-  background-color: var(--background);
-  color: #e2e8f0;
-  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Outfit', sans-serif;
 }
 
-.font-data {
-  font-family: 'IBM Plex Mono', monospace;
-}
+/* Thin gold scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
 
 @keyframes pulse-border {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
-  50% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200, 169, 110, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(200, 169, 110, 0); }
 }
 
 .high-divergence {

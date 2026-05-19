@@ -1,28 +1,27 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
-      colors: {
-        background: "#080f1a",
-        "card-bg": "#1e2d3d",
-        "accent-blue": "#3b82f6",
-        "accent-red": "#ef4444",
-      },
       fontFamily: {
-        mono: ["IBM Plex Mono", "monospace"],
-        sans: ["Inter", "sans-serif"],
+        outfit: ["Outfit", "sans-serif"],
       },
-      animation: {
-        "pulse-fast": "pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+      colors: {
+        gold: {
+          DEFAULT: "#c8a96e",
+          light: "#e8c98e",
+          dark: "#a08040",
+        },
+        bg: {
+          primary: "#0a0a0a",
+          secondary: "#111111",
+          tertiary: "#1a1a1a",
+        },
       },
     },
   },
   plugins: [],
 };
+
 export default config;

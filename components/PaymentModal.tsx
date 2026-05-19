@@ -22,22 +22,33 @@ export function PaymentModal({ result, onClose, onPay }: Props) {
   const isJpycAvailable = chain !== "solana";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-2xl border border-slate-700 bg-[#0d1b2a] p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+      <div className="relative w-full max-w-md rounded border p-6 shadow-2xl font-outfit"
+        style={{ background: "#111111", borderColor: "rgba(200,169,110,0.25)" }}>
+
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 text-slate-500 hover:text-slate-300 text-xl font-mono"
+          className="absolute right-4 top-4 text-lg transition-colors"
+          style={{ color: "#6b5f50" }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "#c8a96e"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = "#6b5f50"; }}
         >
           ✕
         </button>
 
-        <h2 className="font-mono text-lg font-bold text-white mb-1">詳細分析</h2>
-        <p className="font-mono text-sm text-slate-400 mb-4">
-          {result.token} — スコア <span className="text-red-400">{result.divergenceScore.toFixed(2)}</span>
+        <h2 className="font-outfit font-bold text-lg tracking-[0.05em] text-gold mb-1">詳細分析</h2>
+        <p className="font-outfit font-normal text-sm mb-5" style={{ color: "#a09080" }}>
+          {result.token} — スコア{" "}
+          <span style={{ color: "#fbbf24" }} className="font-semibold tabular-nums">
+            {result.divergenceScore.toFixed(2)}
+          </span>
         </p>
 
+        {/* Network selector */}
         <div className="mb-4">
-          <p className="text-xs font-mono text-slate-500 mb-2">NETWORK</p>
+          <p className="font-outfit font-medium text-[10px] uppercase tracking-[0.15em] mb-2" style={{ color: "#6b5f50" }}>
+            NETWORK
+          </p>
           <div className="flex gap-2">
             {(["base", "polygon", "solana"] as Chain[]).map((c) => (
               <button
@@ -46,11 +57,12 @@ export function PaymentModal({ result, onClose, onPay }: Props) {
                   setChain(c);
                   if (c === "solana") setMethod("USDC");
                 }}
-                className={`px-3 py-1.5 rounded text-xs font-mono font-semibold border transition-colors ${
-                  chain === c
-                    ? "bg-blue-600/30 border-blue-500 text-blue-300"
-                    : "border-slate-600 text-slate-400 hover:border-slate-500"
-                }`}
+                className="px-3 py-1.5 rounded text-xs font-outfit font-medium border transition-all"
+                style={{
+                  border: chain === c ? "1px solid #c8a96e" : "1px solid #2a2a2a",
+                  color: chain === c ? "#c8a96e" : "#6b5f50",
+                  background: chain === c ? "rgba(200,169,110,0.10)" : "transparent",
+                }}
               >
                 {c.charAt(0).toUpperCase() + c.slice(1)}
               </button>
@@ -58,60 +70,82 @@ export function PaymentModal({ result, onClose, onPay }: Props) {
           </div>
         </div>
 
+        {/* Solana notice */}
         {chain === "solana" && (
-          <div className="mb-4 rounded-lg border border-yellow-700/40 bg-yellow-900/20 px-3 py-2 text-xs font-mono text-yellow-300">
+          <div className="mb-4 px-3 py-2 rounded text-xs font-outfit font-normal"
+            style={{ background: "rgba(200,169,110,0.08)", borderLeft: "3px solid #c8a96e", color: "#c8a96e" }}>
             SolanaネットワークではUSDC決済のみご利用いただけます
           </div>
         )}
 
-        <div className="mb-6">
-          <p className="text-xs font-mono text-slate-500 mb-2">PAYMENT METHOD</p>
+        {/* Payment method selector */}
+        <div className="mb-5">
+          <p className="font-outfit font-medium text-[10px] uppercase tracking-[0.15em] mb-2" style={{ color: "#6b5f50" }}>
+            PAYMENT METHOD
+          </p>
           <div className="flex gap-2">
             <button
               onClick={() => setMethod("USDC")}
-              className={`px-4 py-2 rounded text-xs font-mono font-semibold border transition-colors ${
-                method === "USDC"
-                  ? "bg-blue-600/30 border-blue-500 text-blue-300"
-                  : "border-slate-600 text-slate-400 hover:border-slate-500"
-              }`}
+              className="px-4 py-2 rounded text-xs font-outfit font-medium border transition-all"
+              style={{
+                border: method === "USDC" ? "1px solid #c8a96e" : "1px solid #2a2a2a",
+                color: method === "USDC" ? "#c8a96e" : "#6b5f50",
+                background: method === "USDC" ? "rgba(200,169,110,0.10)" : "transparent",
+              }}
             >
               USDC {chain === "base" ? "on Base" : chain === "polygon" ? "on Polygon" : "on Solana"}
             </button>
             <button
               onClick={() => isJpycAvailable && setMethod("JPYC")}
               disabled={!isJpycAvailable}
-              className={`px-4 py-2 rounded text-xs font-mono font-semibold border transition-colors ${
-                !isJpycAvailable
-                  ? "border-slate-700 text-slate-600 cursor-not-allowed opacity-40"
+              title={!isJpycAvailable ? "SolanaネットワークではJPYCは使用できません" : undefined}
+              className="px-4 py-2 rounded text-xs font-outfit font-medium border transition-all"
+              style={{
+                border: !isJpycAvailable
+                  ? "1px solid #2a2a2a"
                   : method === "JPYC"
-                  ? "bg-purple-600/30 border-purple-500 text-purple-300"
-                  : "border-slate-600 text-slate-400 hover:border-slate-500"
-              }`}
+                  ? "1px solid #c8a96e"
+                  : "1px solid #2a2a2a",
+                color: !isJpycAvailable
+                  ? "#2a2a2a"
+                  : method === "JPYC"
+                  ? "#c8a96e"
+                  : "#6b5f50",
+                background: method === "JPYC" && isJpycAvailable ? "rgba(200,169,110,0.10)" : "transparent",
+                opacity: !isJpycAvailable ? 0.3 : 1,
+                cursor: !isJpycAvailable ? "not-allowed" : "pointer",
+              }}
             >
               JPYC on Polygon
             </button>
           </div>
         </div>
 
-        <div className="mb-4 rounded-lg border border-slate-700 bg-slate-900/50 px-3 py-2">
-          <div className="flex justify-between text-xs font-mono">
-            <span className="text-slate-400">Analysis fee</span>
-            <span className="text-white font-bold">$0.30 {method}</span>
+        {/* Fee summary */}
+        <div className="mb-4 px-3 py-2.5 rounded border" style={{ borderColor: "#2a2a2a", background: "#0a0a0a" }}>
+          <div className="flex justify-between text-xs font-outfit">
+            <span style={{ color: "#6b5f50" }}>Analysis fee</span>
+            <span className="font-semibold tabular-nums" style={{ color: "#f5f0e8" }}>$0.30 {method}</span>
           </div>
         </div>
 
+        {/* Wallet connect */}
         <div className="mb-4">
           <ConnectButton />
         </div>
 
+        {/* CTA */}
         <button
           onClick={() => onPay(chain, method)}
-          className="w-full py-3 rounded-xl font-mono font-bold text-sm bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+          className="w-full py-3 rounded font-outfit font-bold text-sm transition-colors"
+          style={{ background: "#c8a96e", color: "#0a0a0a" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#e8c98e"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "#c8a96e"; }}
         >
-          支払いして分析を取得 →
+          承認して詳細分析 →
         </button>
 
-        <p className="mt-4 text-xs text-slate-500 font-mono text-center">
+        <p className="mt-4 font-outfit font-light text-xs text-center" style={{ color: "#6b5f50" }}>
           本ツールは情報提供のみを目的としています。投資判断はご自身で行ってください。
         </p>
       </div>
