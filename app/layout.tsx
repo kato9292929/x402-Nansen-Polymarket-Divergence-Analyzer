@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
+import { SolanaProvidersWrapper } from "./solana-providers-wrapper";
 
 export const metadata: Metadata = {
   title: "x402 Divergence Analyzer | Nansen × Polymarket",
@@ -23,7 +24,11 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          <SolanaProvidersWrapper>
+            {children}
+          </SolanaProvidersWrapper>
+        </Providers>
       </body>
     </html>
   );
