@@ -1,5 +1,6 @@
-import { withX402 } from "x402-next";
+import { withX402 } from "@x402/next";
 import { NextRequest, NextResponse } from "next/server";
+import { x402Server, PAY_TO, BASE_NETWORK } from "@/lib/x402";
 import Anthropic from "@anthropic-ai/sdk";
 import { getCached, setCache } from "@/lib/kv";
 import type { Chain } from "@/lib/divergence";
@@ -35,15 +36,12 @@ const handler = async (req: NextRequest): Promise<NextResponse> => {
   const cached = await getCached<TokenAnalysis>(cacheKey);
   if (cached) return NextResponse.json(cached);
 
-  // Fetch Nansen data (mock if no API key)
   const nansenData = process.env.NANSEN_API_KEY
     ? await fetchNansenTokenData(token, chain)
     : getMockNansenData(token);
 
-  // Fetch Polymarket data
   const polymarketData = await fetchPolymarketTokenData(token);
 
-  // Send to Claude for analysis
   const prompt = `System: あなたはオンチェーンデータと予測市場の専門アナリストです。以下のデータを元に、Nansenのスマートマネーの動きとPolymarketの予測市場の乖離を日本語で分析してください。分析観点:1. 乖離の方向と強度 2. 乖離の考えられる理由 3. 過去7日間の傾向 4. 注目すべきシグナル。出力はJSON形式のみ。
 
 データ: ${JSON.stringify({ nansen: nansenData, polymarket: polymarketData })}
@@ -127,10 +125,15 @@ async function fetchPolymarketTokenData(token: string) {
 
 export const POST = withX402(
   handler,
-  (process.env.WALLET_ADDRESS ?? "0x0000000000000000000000000000000000000000") as `0x${string}`,
   {
-    price: "$0.30",
-    network: "base",
-    config: { description: "Token Divergence Analysis" },
-  }
+    accepts: {
+      scheme: "exact",
+      price: "$0.30",
+      network: BASE_NETWORK,
+      payTo: PAY_TO,
+    },
+    description: "Token Divergence Analysis",
+    mimeType: "application/json",
+  },
+  x402Server,
 );

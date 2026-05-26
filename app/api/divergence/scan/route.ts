@@ -1,5 +1,6 @@
-import { withX402 } from "x402-next";
+import { withX402 } from "@x402/next";
 import { NextRequest, NextResponse } from "next/server";
+import { x402Server, PAY_TO, BASE_NETWORK } from "@/lib/x402";
 import { calculateDivergence, getDivergenceType, type DivergenceResult, type Chain } from "@/lib/divergence";
 import { getCached, setCache } from "@/lib/kv";
 
@@ -114,10 +115,15 @@ const handler = async (req: NextRequest): Promise<NextResponse> => {
 
 export const GET = withX402(
   handler,
-  (process.env.WALLET_ADDRESS ?? "0x0000000000000000000000000000000000000000") as `0x${string}`,
   {
-    price: "$0.15",
-    network: "base",
-    config: { description: "Divergence Scan - Top 10" },
-  }
+    accepts: {
+      scheme: "exact",
+      price: "$0.15",
+      network: BASE_NETWORK,
+      payTo: PAY_TO,
+    },
+    description: "Divergence Scan - Top 10",
+    mimeType: "application/json",
+  },
+  x402Server,
 );

@@ -1,13 +1,11 @@
-import { NextResponse } from "next/server";
+import { withX402 } from "@x402/next";
+import { NextRequest, NextResponse } from "next/server";
+import { x402Server, SOLANA_PAY_TO, SOLANA_NETWORK } from "@/lib/x402";
 import Anthropic from "@anthropic-ai/sdk";
 import { getCached, setCache } from "@/lib/kv";
 import { MOCK_DIVERGENCE_DATA } from "@/lib/divergence";
 
 export const dynamic = "force-dynamic";
-
-const USDC_SOLANA = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
-const PRICE_LAMPORTS = "1000000"; // $1.00 USDC (6 decimals)
-const RESOURCE_PATH = "/api/divergence/weekly/solana";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -20,50 +18,16 @@ function getWeekKey(): string {
   return `${now.getFullYear()}-W${String(weekNum).padStart(2, "0")}`;
 }
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "x-payment, content-type",
-};
+const handler = async (_req: NextRequest): Promise<NextResponse> => {
+  const weekKey = getWeekKey();
+  const cacheKey = `divergence:weekly:solana:${weekKey}`;
 
-export async function GET(req: Request) {
-  const paymentHeader = req.headers.get("X-PAYMENT");
+  const cached = await getCached<{ report: string; generatedAt: string; topDivergences: typeof MOCK_DIVERGENCE_DATA }>(cacheKey);
+  if (cached) return NextResponse.json(cached);
 
-  if (!paymentHeader) {
-    return new NextResponse(
-      JSON.stringify({
-        error: "Payment Required",
-        x402Version: 1,
-        accepts: [
-          {
-            scheme: "exact",
-            network: "solana-mainnet",
-            maxAmountRequired: PRICE_LAMPORTS,
-            resource: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}${RESOURCE_PATH}`,
-            description: "Weekly Divergence Report (Solana)",
-            mimeType: "application/json",
-            payTo: process.env.SOLANA_WALLET_ADDRESS ?? "",
-            maxTimeoutSeconds: 300,
-            asset: USDC_SOLANA,
-          },
-        ],
-      }),
-      {
-        status: 402,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
-  }
+  const topDivergences = MOCK_DIVERGENCE_DATA.filter((d) => d.divergenceScore > 0.5).slice(0, 5);
 
-  try {
-    const weekKey = getWeekKey();
-    const cacheKey = `divergence:weekly:solana:${weekKey}`;
-
-    const cached = await getCached<{ report: string; generatedAt: string; topDivergences: typeof MOCK_DIVERGENCE_DATA }>(cacheKey);
-    if (cached) return NextResponse.json(cached, { headers: corsHeaders });
-
-    const topDivergences = MOCK_DIVERGENCE_DATA.filter((d) => d.divergenceScore > 0.5).slice(0, 5);
-
-    const prompt = `あなたはオンチェーンデータと予測市場の専門アナリストです。以下の週次乖離データを元に、日本語で包括的なウィークリーレポートを作成してください（約1,500字）。
+  const prompt = `あなたはオンチェーンデータと予測市場の専門アナリストです。以下の週次乖離データを元に、日本語で包括的なウィークリーレポートを作成してください（約1,500字）。
 
 データ: ${JSON.stringify(topDivergences)}
 
@@ -75,33 +39,49 @@ export async function GET(req: Request) {
 
 Markdown形式で出力してください。`;
 
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 2048,
-      messages: [{ role: "user", content: prompt }],
-    });
+  const message = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 2048,
+    messages: [{ role: "user", content: prompt }],
+  });
 
-    const content = message.content[0];
-    if (content.type !== "text") {
-      return NextResponse.json({ error: "Invalid response" }, { status: 500, headers: corsHeaders });
-    }
-
-    const result = {
-      report: content.text,
-      generatedAt: new Date().toISOString(),
-      topDivergences,
-    };
-
-    await setCache(cacheKey, result, 86400);
-    return NextResponse.json(result, { headers: corsHeaders });
-  } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500, headers: corsHeaders });
+  const content = message.content[0];
+  if (content.type !== "text") {
+    return NextResponse.json({ error: "Invalid response" }, { status: 500 });
   }
-}
+
+  const result = {
+    report: content.text,
+    generatedAt: new Date().toISOString(),
+    topDivergences,
+  };
+
+  await setCache(cacheKey, result, 86400);
+  return NextResponse.json(result);
+};
+
+export const GET = withX402(
+  handler,
+  {
+    accepts: {
+      scheme: "exact",
+      price: "$1.00",
+      network: SOLANA_NETWORK,
+      payTo: SOLANA_PAY_TO,
+    },
+    description: "Weekly Divergence Report (Solana)",
+    mimeType: "application/json",
+  },
+  x402Server,
+);
 
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
-    headers: { ...corsHeaders, "Access-Control-Allow-Methods": "GET, OPTIONS" },
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "x-payment, x-402-payment, content-type",
+    },
   });
 }

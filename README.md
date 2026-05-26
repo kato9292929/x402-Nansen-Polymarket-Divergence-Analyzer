@@ -2,7 +2,7 @@
 
 Nansenのスマートマネーフローと Polymarket の予測市場確率の**乖離を検出・分析する**リサーチターミナル。
 
-x402プロトコルによるマイクロペイメントで保護されたAPIエンドポイントを、EVM（Base / Polygon）および Solana チェーンで提供します。
+x402 **v2** プロトコル（CAIP-2 network 識別子 / CDP Facilitator）によるマイクロペイメントで保護されたAPIエンドポイントを、EVM（Base / Polygon）および Solana チェーンで提供します。
 
 ---
 
@@ -11,7 +11,8 @@ x402プロトコルによるマイクロペイメントで保護されたAPIエ�
 ```
 Next.js 15 (App Router)
 ├── フロントエンド  : RainbowKit (EVM) + Solana Wallet Adapter
-├── 決済           : x402-next (EVM) / 手動402レスポンス (Solana)
+├── 決済           : @x402/next v2 + @x402/evm + @x402/svm (EVM & Solana)
+├── Facilitator    : CDP Facilitator (CDP_API_KEY_ID + CDP_API_KEY_SECRET)
 ├── データソース    : Nansen API + Polymarket Gamma API
 ├── 分析           : Claude API (claude-sonnet-4-20250514)
 └── キャッシュ      : Vercel KV / Upstash Redis
@@ -273,10 +274,19 @@ NANSEN_API_KEY=
 ANTHROPIC_API_KEY=
 
 # EVM 受取ウォレット（Base / Polygon）
-WALLET_ADDRESS=
+WALLET_ADDRESS=0xC67d94504696960bA0f2e7C3FeE703950734c00A
 
 # Solana 受取ウォレット（base58）
 SOLANA_WALLET_ADDRESS=
+
+# Coinbase Developer Platform (CDP) — x402 v2 production facilitator
+# UUID 形式: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+CDP_API_KEY_ID=
+# base64 形式（末尾 ==）
+CDP_API_KEY_SECRET=
+
+# Facilitator URL (x402 v2)
+FACILITATOR_URL=https://api.cdp.coinbase.com/platform/v2/x402
 
 # アプリURL（x402 resource フィールドに使用）
 NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
@@ -286,14 +296,14 @@ HELIUS_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
 NEXT_PUBLIC_HELIUS_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
 
 # WalletConnect（未設定時は "placeholder" フォールバック）
-NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=placeholder
+
+# JPYC（Polygon ERC-20）
+NEXT_PUBLIC_JPYC_CONTRACT=0x431D5dfF03120AFA4bDf332c61A6e1766eF37BF
 
 # Vercel KV / Upstash Redis（Vercel Storage から自動追加）
 KV_REST_API_URL=
 KV_REST_API_TOKEN=
-
-# JPYC（Polygon）
-NEXT_PUBLIC_JPYC_CONTRACT=0x431D5dfF03120AFA4bDf332c61A6e1766eF37BF
 ```
 
 ---
@@ -318,7 +328,7 @@ npm run build
 | カテゴリ | ライブラリ |
 |---|---|
 | Framework | Next.js 15.5.18 (App Router) |
-| 決済 | x402-next 1.2.0 |
+| 決済 | @x402/next 2.13.0 + @x402/evm + @x402/svm (v2) |
 | EVM Wallet | RainbowKit 2.2.4 + wagmi 2.14.16 |
 | Solana Wallet | @solana/wallet-adapter (Phantom, Solflare) |
 | AI 分析 | @anthropic-ai/sdk 0.39.0 |

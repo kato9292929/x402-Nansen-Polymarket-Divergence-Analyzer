@@ -1,12 +1,10 @@
-import { NextResponse } from "next/server";
+import { withX402 } from "@x402/next";
+import { NextRequest, NextResponse } from "next/server";
+import { x402Server, SOLANA_PAY_TO, SOLANA_NETWORK } from "@/lib/x402";
 import { calculateDivergence, getDivergenceType, type DivergenceResult } from "@/lib/divergence";
 import { getCached, setCache } from "@/lib/kv";
 
 export const dynamic = "force-dynamic";
-
-const USDC_SOLANA = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
-const PRICE_LAMPORTS = "150000"; // $0.15 USDC (6 decimals)
-const RESOURCE_PATH = "/api/divergence/scan/solana";
 
 async function fetchNansenFlows(): Promise<Array<{ token: string; netFlowUsd: number; smartWallets: number }>> {
   const apiKey = process.env.NANSEN_API_KEY;
@@ -47,13 +45,13 @@ async function fetchPolymarketData(): Promise<Array<{ id: string; question: stri
   }));
 }
 
-async function runScan(): Promise<{ scannedAt: string; chain: string; results: DivergenceResult[] }> {
+const handler = async (_req: NextRequest): Promise<NextResponse> => {
   const now = new Date();
   const hourKey = now.toISOString().slice(0, 13);
   const cacheKey = `divergence:scan:solana:${hourKey}`;
 
   const cached = await getCached<{ scannedAt: string; chain: string; results: DivergenceResult[] }>(cacheKey);
-  if (cached) return cached;
+  if (cached) return NextResponse.json(cached);
 
   const [nansenFlows, polymarketData] = await Promise.all([fetchNansenFlows(), fetchPolymarketData()]);
 
@@ -81,54 +79,31 @@ async function runScan(): Promise<{ scannedAt: string; chain: string; results: D
   results.sort((a, b) => b.divergenceScore - a.divergenceScore);
   const response = { scannedAt: now.toISOString(), chain: "solana", results: results.slice(0, 10) };
   await setCache(cacheKey, response, 1800);
-  return response;
-}
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "x-payment, content-type",
+  return NextResponse.json(response);
 };
 
-export async function GET(req: Request) {
-  const paymentHeader = req.headers.get("X-PAYMENT");
-
-  if (!paymentHeader) {
-    return new NextResponse(
-      JSON.stringify({
-        error: "Payment Required",
-        x402Version: 1,
-        accepts: [
-          {
-            scheme: "exact",
-            network: "solana-mainnet",
-            maxAmountRequired: PRICE_LAMPORTS,
-            resource: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}${RESOURCE_PATH}`,
-            description: "Divergence Scan - Top 10 (Solana)",
-            mimeType: "application/json",
-            payTo: process.env.SOLANA_WALLET_ADDRESS ?? "",
-            maxTimeoutSeconds: 300,
-            asset: USDC_SOLANA,
-          },
-        ],
-      }),
-      {
-        status: 402,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
-  }
-
-  try {
-    const data = await runScan();
-    return NextResponse.json(data, { headers: corsHeaders });
-  } catch (error) {
-    return NextResponse.json({ error: String(error) }, { status: 500, headers: corsHeaders });
-  }
-}
+export const GET = withX402(
+  handler,
+  {
+    accepts: {
+      scheme: "exact",
+      price: "$0.15",
+      network: SOLANA_NETWORK,
+      payTo: SOLANA_PAY_TO,
+    },
+    description: "Divergence Scan - Top 10 (Solana)",
+    mimeType: "application/json",
+  },
+  x402Server,
+);
 
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 200,
-    headers: { ...corsHeaders, "Access-Control-Allow-Methods": "GET, OPTIONS" },
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "x-payment, x-402-payment, content-type",
+    },
   });
 }
